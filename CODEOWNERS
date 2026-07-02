@@ -1,0 +1,5 @@
+# Default owner for everything in the shared org repo.
+# (A CODEOWNERS file only governs the repo it lives in — this one protects
+#  the reusable workflows and org defaults. New repos get their own copy via
+#  ai-template-repo.)
+* @and3rn3t
