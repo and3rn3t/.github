@@ -1,0 +1,16 @@
+name: CI
+
+on:
+  push:
+    branches: [$default-branch]
+  pull_request:
+    branches: [$default-branch]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    uses: and3rn3t/.github/.github/workflows/reusable-node-verify.yml@main
+    with:
+      command: npm run lint && npm run type-check && npm test && npm run build

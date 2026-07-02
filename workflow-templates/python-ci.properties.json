@@ -1,0 +1,6 @@
+{
+  "name": "and3rn3t Python CI",
+  "description": "pytest across supported Python versions via the shared reusable workflow.",
+  "categories": ["ci"],
+  "filePatterns": ["pyproject.toml$"]
+}

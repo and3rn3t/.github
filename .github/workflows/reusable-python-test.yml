@@ -1,0 +1,56 @@
+# Reusable Python test — call from any and3rn3t repo:
+#
+#   jobs:
+#     test:
+#       uses: and3rn3t/.github/.github/workflows/reusable-python-test.yml@main
+#       with:
+#         python-versions: '["3.10", "3.13"]'
+
+name: Reusable Python Test
+
+on:
+  workflow_call:
+    inputs:
+      python-versions:
+        description: JSON array of Python versions to matrix over.
+        required: false
+        default: '["3.10", "3.13"]'
+        type: string
+      install-command:
+        description: Dependency install command.
+        required: false
+        default: pip install -e ".[dev]"
+        type: string
+      test-command:
+        description: Test command.
+        required: false
+        default: pytest
+        type: string
+      timeout-minutes:
+        description: Job timeout in minutes.
+        required: false
+        default: 15
+        type: number
+
+permissions: {}
+
+jobs:
+  test:
+    name: test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(inputs.python-versions) }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: ${{ inputs.install-command }}
+      - name: Run tests
+        run: ${{ inputs.test-command }}

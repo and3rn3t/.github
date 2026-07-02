@@ -1,0 +1,6 @@
+{
+  "name": "and3rn3t Node CI",
+  "description": "Lint, type-check, test, and build via the shared reusable workflow.",
+  "categories": ["ci"],
+  "filePatterns": ["package.json$"]
+}

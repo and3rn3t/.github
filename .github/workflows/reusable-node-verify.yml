@@ -1,0 +1,79 @@
+# Reusable Node verify — call from any and3rn3t repo:
+#
+#   jobs:
+#     lint:
+#       uses: and3rn3t/.github/.github/workflows/reusable-node-verify.yml@main
+#       with:
+#         command: npm run lint
+#
+# Self-contained (no repo-local composite actions required).
+
+name: Reusable Node Verify
+
+on:
+  workflow_call:
+    inputs:
+      command:
+        description: Command to run after checkout and setup.
+        required: true
+        type: string
+      package-manager:
+        description: npm or pnpm (controls install + cache).
+        required: false
+        default: npm
+        type: string
+      node-version-file:
+        description: File to read the Node version from.
+        required: false
+        default: .nvmrc
+        type: string
+      timeout-minutes:
+        description: Job timeout in minutes.
+        required: false
+        default: 15
+        type: number
+      upload-artifact:
+        description: Whether to upload an artifact after command execution.
+        required: false
+        default: false
+        type: boolean
+      artifact-name:
+        description: Artifact name when upload-artifact is true.
+        required: false
+        default: output
+        type: string
+      artifact-path:
+        description: Artifact path when upload-artifact is true.
+        required: false
+        default: ""
+        type: string
+
+permissions: {}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup pnpm
+        if: ${{ inputs.package-manager == 'pnpm' }}
+        uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: ${{ inputs.node-version-file }}
+          cache: ${{ inputs.package-manager }}
+      - name: Install dependencies
+        run: ${{ inputs.package-manager == 'pnpm' && 'pnpm install --frozen-lockfile' || 'npm ci' }}
+        env:
+          HUSKY: 0
+      - name: Run verify command
+        run: ${{ inputs.command }}
+      - name: Upload artifact
+        if: ${{ inputs.upload-artifact && inputs.artifact-path != '' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.artifact-path }}
