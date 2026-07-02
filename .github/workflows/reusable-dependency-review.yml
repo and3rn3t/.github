@@ -1,0 +1,33 @@
+# Reusable Dependency Review — call on pull_request:
+#
+#   jobs:
+#     dependency-review:
+#       uses: and3rn3t/.github/.github/workflows/reusable-dependency-review.yml@main
+
+name: Reusable Dependency Review
+
+on:
+  workflow_call:
+    inputs:
+      fail-on-severity:
+        description: Minimum severity that fails the check.
+        required: false
+        default: critical
+        type: string
+
+permissions: {}
+
+jobs:
+  dependency-review:
+    name: Review Dependencies
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v5
+        with:
+          fail-on-severity: ${{ inputs.fail-on-severity }}
+          comment-summary-in-pr: always

@@ -1,0 +1,78 @@
+# Reusable Playwright E2E — call from any and3rn3t repo:
+#
+#   jobs:
+#     e2e:
+#       uses: and3rn3t/.github/.github/workflows/reusable-playwright-e2e.yml@main
+#       with:
+#         command: npm run test:e2e
+
+name: Reusable Playwright E2E
+
+on:
+  workflow_call:
+    inputs:
+      command:
+        description: E2E test command.
+        required: false
+        default: npm run test:e2e
+        type: string
+      package-manager:
+        description: npm or pnpm.
+        required: false
+        default: npm
+        type: string
+      node-version-file:
+        description: File to read the Node version from.
+        required: false
+        default: .nvmrc
+        type: string
+      browsers:
+        description: Playwright browsers to install (passed to `playwright install`).
+        required: false
+        default: chromium
+        type: string
+      report-path:
+        description: Report directory uploaded as an artifact.
+        required: false
+        default: playwright-report/
+        type: string
+      timeout-minutes:
+        description: Job timeout in minutes.
+        required: false
+        default: 30
+        type: number
+
+permissions: {}
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup pnpm
+        if: ${{ inputs.package-manager == 'pnpm' }}
+        uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: ${{ inputs.node-version-file }}
+          cache: ${{ inputs.package-manager }}
+      - name: Install dependencies
+        run: ${{ inputs.package-manager == 'pnpm' && 'pnpm install --frozen-lockfile' || 'npm ci' }}
+        env:
+          HUSKY: 0
+      - name: Install Playwright browsers
+        run: ${{ inputs.package-manager == 'pnpm' && 'pnpm exec' || 'npx' }} playwright install ${{ inputs.browsers }} --with-deps
+      - name: Run E2E tests
+        run: ${{ inputs.command }}
+        env:
+          CI: true
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: ${{ inputs.report-path }}
+          retention-days: 7

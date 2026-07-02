@@ -19,6 +19,9 @@ jobs:
 |---|---|---|
 | `reusable-node-verify.yml` | Checkout → Node setup (from `.nvmrc`) → install → run command | `command` (required), `package-manager` (npm/pnpm), artifact options |
 | `reusable-python-test.yml` | pytest across a Python version matrix | `python-versions`, `install-command`, `test-command` |
+| `reusable-codeql.yml` | CodeQL security analysis | `languages` (required, JSON array) |
+| `reusable-dependency-review.yml` | PR dependency review | `fail-on-severity` (default critical) |
+| `reusable-playwright-e2e.yml` | Playwright e2e + always-uploaded report | `command`, `package-manager`, `browsers`, `report-path` |
 
 ## Workflow templates
 
@@ -26,7 +29,7 @@ jobs:
 
 ## Defaults
 
-`SECURITY.md` here applies to any repo that doesn't define its own.
+`SECURITY.md` here applies to any repo that doesn't define its own. `.github/release-drafter.yml` is the default Release Drafter config for all repos.
 
 ## Conventions
 
