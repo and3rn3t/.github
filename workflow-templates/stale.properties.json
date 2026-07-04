@@ -1,0 +1,6 @@
+{
+  "name": "and3rn3t Stale Issue/PR Closer",
+  "description": "Automatically mark and close inactive issues and PRs.",
+  "categories": ["automation"],
+  "filePatterns": [".editorconfig$"]
+}

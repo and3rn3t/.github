@@ -1,0 +1,6 @@
+{
+  "name": "and3rn3t Bundle Size Report",
+  "description": "Comment on PRs with the compressed-size diff for a Vite build (report-only, no failing budget).",
+  "categories": ["ci", "performance"],
+  "filePatterns": ["vite.config.ts$"]
+}

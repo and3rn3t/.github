@@ -1,0 +1,48 @@
+# Reusable Lighthouse audit — runs Lighthouse CI against a URL and uploads
+# the report. Fits the "audit an already-deployed/preview URL" pattern (see
+# and3rn3t's lighthouse.yml). Repos with custom build steps or bespoke PR-
+# comment formatting (health, homehub, silas, guess) should keep their own
+# workflow — this only covers the simple, truly-generic case.
+#
+#   jobs:
+#     lighthouse:
+#       uses: and3rn3t/.github/.github/workflows/reusable-lighthouse.yml@main
+#       with:
+#         url: https://andernet.dev
+
+name: Reusable Lighthouse
+
+on:
+  workflow_call:
+    inputs:
+      url:
+        description: URL to audit.
+        required: true
+        type: string
+      config-path:
+        description: Path to a lighthouserc config file, if any.
+        required: false
+        default: ''
+        type: string
+
+permissions: {}
+
+jobs:
+  lighthouse:
+    name: Lighthouse audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: ${{ inputs.url }}
+          configPath: ${{ inputs.config-path }}
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+        env:
+          # Configs that read the URL from an env var (rather than the action's
+          # own `urls` input) — e.g. and3rn3t's .lighthouserc.cjs — need this set.
+          LHCI_URL: ${{ inputs.url }}

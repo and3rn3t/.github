@@ -1,0 +1,6 @@
+{
+  "name": "and3rn3t Actionlint",
+  "description": "Validate GitHub Actions workflow YAML against the real schema on PRs touching .github/workflows.",
+  "categories": ["ci", "code quality"],
+  "filePatterns": [".editorconfig$"]
+}

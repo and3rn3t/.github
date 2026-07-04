@@ -1,0 +1,30 @@
+# Reusable actionlint check — validates GitHub Actions workflow YAML against
+# the real schema (not just YAML syntax): invalid contexts in `with:` blocks,
+# duplicate keys, outdated runner versions, script-injection risks, etc.
+# This exists because we found a real bug this way — a reusable-workflow
+# caller referencing `secrets.X` inside a `with:` block, which is invalid and
+# would have hard-failed the first time the workflow ran.
+#
+#   jobs:
+#     actionlint:
+#       uses: and3rn3t/.github/.github/workflows/reusable-actionlint.yml@main
+
+name: Reusable Actionlint
+
+on:
+  workflow_call: {}
+
+permissions: {}
+
+jobs:
+  actionlint:
+    name: Lint workflow files
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run actionlint
+        uses: reviewdog/action-actionlint@v1
+        with:
+          fail_level: error

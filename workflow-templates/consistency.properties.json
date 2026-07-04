@@ -1,0 +1,6 @@
+{
+  "name": "and3rn3t Consistency Guard",
+  "description": "Warn (or fail) when baseline config files drift from ai-template-repo.",
+  "categories": ["ci", "code quality"],
+  "filePatterns": [".editorconfig$"]
+}

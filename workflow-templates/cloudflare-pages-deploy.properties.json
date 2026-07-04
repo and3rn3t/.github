@@ -1,0 +1,6 @@
+{
+  "name": "and3rn3t Cloudflare Pages Deploy",
+  "description": "Build and deploy to Cloudflare Pages via wrangler, with production + PR-preview deploys.",
+  "categories": ["ci", "deployment"],
+  "filePatterns": ["wrangler.toml$"]
+}

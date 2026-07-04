@@ -1,0 +1,22 @@
+# Lighthouse audit against an already-deployed URL. Only fits the simple
+# "audit a live/preview URL" case — if you need a build step first or custom
+# PR-comment formatting, write your own job (see health/homehub for that).
+name: Lighthouse CI
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      url:
+        description: URL to audit (defaults to the value below)
+        required: false
+        default: 'https://example.com'
+  schedule:
+    - cron: '0 8 * * 1' # Mondays at 08:00 UTC
+
+jobs:
+  lighthouse:
+    uses: and3rn3t/.github/.github/workflows/reusable-lighthouse.yml@main
+    with:
+      url: ${{ github.event.inputs.url || 'https://example.com' }}

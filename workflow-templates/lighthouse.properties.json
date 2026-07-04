@@ -1,0 +1,6 @@
+{
+  "name": "and3rn3t Lighthouse Audit",
+  "description": "Audit an already-deployed URL with Lighthouse CI. Not for repos needing a build step or custom PR-comment formatting.",
+  "categories": ["ci", "performance"],
+  "filePatterns": ["vite.config.ts$"]
+}

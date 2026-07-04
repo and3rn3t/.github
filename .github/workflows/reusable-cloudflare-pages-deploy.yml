@@ -1,0 +1,138 @@
+# Reusable Cloudflare Pages deploy — build then `wrangler pages deploy`, with
+# a production deploy on push to main and a preview deploy on PRs (skipped for
+# bot-authored PRs, since Dependabot/Renovate PRs don't get repo secrets).
+#
+#   jobs:
+#     deploy:
+#       uses: and3rn3t/.github/.github/workflows/reusable-cloudflare-pages-deploy.yml@main
+#       with:
+#         project-name: hug
+#         build-env-json: '{"NON_SECRET_VAR": "some-public-value"}'
+#         build-secret-env-name: VITE_HF_TOKEN   # exposes BUILD_SECRET under this name
+#       secrets:
+#         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+#         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+#         BUILD_SECRET: ${{ secrets.VITE_HF_TOKEN }}
+#
+# NOTE: the `secrets` context is not available inside a caller job's `with:`
+# block at all (GitHub Actions restriction) — that's why a single secret is
+# passed through the dedicated `BUILD_SECRET` secret + `build-secret-env-name`
+# input pair below, rather than embedded in build-env-json. build-env-json is
+# only for non-secret values (public constants like an API base URL).
+#
+# For bespoke needs (a PR-comment with the preview URL, a one-time "create
+# project" step, more than one build-time secret) — add a follow-up job in
+# the caller that `needs: deploy`, rather than growing this workflow's surface
+# area.
+
+name: Reusable Cloudflare Pages Deploy
+
+on:
+  workflow_call:
+    inputs:
+      project-name:
+        description: Cloudflare Pages project name.
+        required: true
+        type: string
+      build-command:
+        description: Command that produces the dist directory.
+        required: false
+        default: build
+        type: string
+      dist-dir:
+        description: Directory to deploy.
+        required: false
+        default: dist
+        type: string
+      package-manager:
+        description: npm or pnpm (controls install + cache).
+        required: false
+        default: npm
+        type: string
+      node-version-file:
+        description: File to read the Node version from.
+        required: false
+        default: .nvmrc
+        type: string
+      deploy-previews:
+        description: Whether to deploy a preview on pull_request (skipped for bot PRs regardless).
+        required: false
+        default: true
+        type: boolean
+      build-env-json:
+        description: >
+          JSON object of extra NON-SECRET env vars to set for the build step,
+          e.g. '{"VITE_API_BASE": "https://api.example.com"}'. Do not put
+          secret values here — the secrets context isn't reachable from a
+          caller's with: block, so a secrets reference written here would
+          fail to resolve. Use build-secret-env-name for the one-secret case.
+        required: false
+        default: '{}'
+        type: string
+      build-secret-env-name:
+        description: >
+          If set, the BUILD_SECRET secret is exposed to the build step under
+          this env var name (e.g. "VITE_HF_TOKEN"). Leave empty if the build
+          needs no secret.
+        required: false
+        default: ''
+        type: string
+    secrets:
+      CLOUDFLARE_API_TOKEN:
+        required: true
+      CLOUDFLARE_ACCOUNT_ID:
+        required: true
+      BUILD_SECRET:
+        required: false
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        if: ${{ inputs.package-manager == 'pnpm' }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: ${{ inputs.node-version-file }}
+          cache: ${{ inputs.package-manager }}
+      - name: Install dependencies
+        run: ${{ inputs.package-manager == 'pnpm' && 'pnpm install --frozen-lockfile' || 'npm ci' }}
+        env:
+          HUSKY: 0
+      - name: Expose build secret (if configured)
+        if: inputs.build-secret-env-name != ''
+        env:
+          BUILD_SECRET: ${{ secrets.BUILD_SECRET }}
+        run: echo "${{ inputs.build-secret-env-name }}=$BUILD_SECRET" >> "$GITHUB_ENV"
+      - name: Build
+        run: ${{ inputs.package-manager }} run ${{ inputs.build-command }}
+        env: ${{ fromJSON(inputs.build-env-json) }}
+      - name: Deploy to Cloudflare Pages (production)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy ${{ inputs.dist-dir }} --project-name=${{ inputs.project-name }} --commit-dirty=true
+      - name: Deploy preview
+        if: |
+          inputs.deploy-previews &&
+          github.event_name == 'pull_request' &&
+          github.actor != 'dependabot[bot]' &&
+          github.actor != 'renovate[bot]'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy ${{ inputs.dist-dir }} --project-name=${{ inputs.project-name }} --branch=${{ github.head_ref }} --commit-dirty=true

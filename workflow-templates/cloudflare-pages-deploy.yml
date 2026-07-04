@@ -1,0 +1,24 @@
+# Build + deploy to Cloudflare Pages. Adjust project-name and build-env-json
+# for this repo. See reusable-cloudflare-pages-deploy.yml for what this does
+# and how to add repo-specific extras (PR comments, one-time project setup)
+# as a follow-up job.
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    uses: and3rn3t/.github/.github/workflows/reusable-cloudflare-pages-deploy.yml@main
+    with:
+      project-name: CHANGE-ME
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

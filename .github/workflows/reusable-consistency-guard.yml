@@ -1,0 +1,92 @@
+# Reusable consistency guard — fail (or warn) a PR when baseline config files
+# drift from the ai-template-repo standard. Call from any and3rn3t repo:
+#
+#   jobs:
+#     consistency:
+#       uses: and3rn3t/.github/.github/workflows/reusable-consistency-guard.yml@main
+#       with:
+#         mode: warn      # or fail
+#
+# Baseline copies live in this repo under baseline/. A caller repo can declare
+# intentional drift in a top-level .consistency-ignore file (one path per line);
+# listed files are skipped. No secrets/PAT required — this repo is public.
+
+name: Reusable Consistency Guard
+
+on:
+  workflow_call:
+    inputs:
+      files:
+        description: Space-separated files to check against the baseline.
+        required: false
+        default: ".editorconfig commitlint.config.mjs .nvmrc"
+        type: string
+      mode:
+        description: "fail (block PR on drift) or warn (annotate only)."
+        required: false
+        default: fail
+        type: string
+      baseline-ref:
+        description: Ref of and3rn3t/.github to read the baseline from.
+        required: false
+        default: main
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout caller repo
+        uses: actions/checkout@v6
+      - name: Checkout baseline (and3rn3t/.github)
+        uses: actions/checkout@v6
+        with:
+          repository: and3rn3t/.github
+          ref: ${{ inputs.baseline-ref }}
+          path: .consistency-baseline
+      - name: Compare against baseline
+        env:
+          FILES: ${{ inputs.files }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          set -u
+          BASE=".consistency-baseline/baseline"
+          IGN=".consistency-ignore"
+          violations=0
+          if [ -f "$IGN" ]; then echo "Declared intentional drift (.consistency-ignore):"; sed 's/^/  · /' "$IGN"; echo "----"; fi
+          for f in $FILES; do
+            if [ -f "$IGN" ] && grep -qxF "$f" "$IGN"; then
+              echo "· $f — skipped (.consistency-ignore)"; continue
+            fi
+            if [ ! -f "$BASE/$f" ]; then
+              echo "· $f — no baseline on file, skipping"; continue
+            fi
+            if [ ! -f "$f" ]; then
+              echo "::error file=$f::missing $f (expected from ai-template-repo baseline)"
+              violations=$((violations+1)); continue
+            fi
+            if diff -q "$BASE/$f" "$f" >/dev/null 2>&1; then
+              echo "✓ $f — in sync"
+            else
+              echo "::warning file=$f::$f drifts from baseline (add to .consistency-ignore if intentional)"
+              diff "$BASE/$f" "$f" || true
+              violations=$((violations+1))
+            fi
+          done
+          echo "----"
+          if [ "$violations" -gt 0 ]; then
+            echo "$violations consistency violation(s) found."
+            if [ "$MODE" = "fail" ]; then exit 1; fi
+            echo "mode=warn — annotating only, not failing the build."
+          else
+            echo "All checked files are consistent with the baseline."
+          fi

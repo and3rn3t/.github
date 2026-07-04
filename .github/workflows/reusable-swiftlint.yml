@@ -1,0 +1,41 @@
+# Reusable SwiftLint check — the one piece of CI that's genuinely identical
+# across Printer, remote, and homekit-automator. NOT a full Xcode build/test
+# workflow: those three (plus weather-app) build meaningfully different things
+# (an app + widget extension, a plain iOS app pinned to a specific Xcode
+# version, an SPM CLI generated via XcodeGen targeting Mac Catalyst) and each
+# is already tuned to its own project — consolidating the build/test steps
+# would be a net loss, not a simplification. This workflow is also unverified
+# in the sense that it was authored without access to a macOS/Xcode toolchain;
+# test it in one repo before trusting it elsewhere.
+#
+#   jobs:
+#     lint:
+#       uses: and3rn3t/.github/.github/workflows/reusable-swiftlint.yml@main
+#       with:
+#         config-path: .swiftlint.yml
+
+name: Reusable SwiftLint
+
+on:
+  workflow_call:
+    inputs:
+      config-path:
+        description: Path to .swiftlint.yml, if not at the repo root.
+        required: false
+        default: .swiftlint.yml
+        type: string
+
+permissions: {}
+
+jobs:
+  lint:
+    runs-on: macos-15
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SwiftLint
+        run: brew install swiftlint
+      - name: Lint
+        run: swiftlint lint --strict --config ${{ inputs.config-path }} --reporter github-actions-logging

@@ -1,0 +1,6 @@
+{
+  "name": "and3rn3t Gitleaks Secret Scan",
+  "description": "Scan commits and PRs for accidentally committed secrets using Gitleaks.",
+  "categories": ["ci", "security"],
+  "filePatterns": [".editorconfig$"]
+}
