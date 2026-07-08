@@ -1,0 +1,27 @@
+# Reusable Release Drafter runner. Drafts an in-progress GitHub Release from
+# merged PRs, categorized per each repo's own local .github/release-drafter.yml
+# config (categories/template stay local — only the *workflow* that runs the
+# action is shared here, since that part was byte-identical across 33 repos).
+#
+#   jobs:
+#     update-release-draft:
+#       uses: and3rn3t/.github/.github/workflows/reusable-release-drafter.yml@v1
+
+name: Reusable Release Drafter
+
+on:
+  workflow_call: {}
+
+permissions: {}
+
+jobs:
+  update-release-draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: release-drafter/release-drafter@v7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
