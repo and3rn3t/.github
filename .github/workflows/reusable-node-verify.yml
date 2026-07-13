@@ -51,7 +51,11 @@ on:
 permissions: {}
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Scoped by inputs.command too: github.workflow is the top-level caller's
+  # name, so two calls to this file from the same caller (e.g. a lint job and
+  # a unit-test job both invoked from one "Quality" workflow) would otherwise
+  # collide on the same group and cancel each other.
+  group: node-verify-${{ github.workflow }}-${{ github.ref }}-${{ inputs.command }}
   cancel-in-progress: true
 
 jobs:

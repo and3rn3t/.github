@@ -45,7 +45,11 @@ on:
 permissions: {}
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Static "playwright-e2e-" prefix keeps this group distinct from
+  # reusable-node-verify.yml's group even when both are called from the same
+  # caller workflow (github.workflow resolves to the caller's name, not this
+  # file's), which previously let them cancel each other mid-run.
+  group: playwright-e2e-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
