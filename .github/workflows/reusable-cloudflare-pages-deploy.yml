@@ -99,7 +99,7 @@ jobs:
       contents: read
       deployments: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
         if: ${{ inputs.package-manager == 'pnpm' }}
       - uses: actions/setup-node@v6
