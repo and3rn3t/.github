@@ -69,7 +69,7 @@ jobs:
       - name: Setup pnpm
         if: ${{ inputs.package-manager == 'pnpm' }}
         uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: ${{ inputs.node-version-file }}
           cache: ${{ inputs.package-manager }}
