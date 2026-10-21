@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   deploy:
-    uses: and3rn3t/.github/.github/workflows/reusable-cloudflare-pages-deploy.yml@main
+    uses: and3rn3t/.github/.github/workflows/reusable-cloudflare-pages-deploy.yml@v1
     with:
       project-name: CHANGE-ME
     secrets:
