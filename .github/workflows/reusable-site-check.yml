@@ -113,6 +113,9 @@ jobs:
   lighthouse:
     name: Lighthouse scores
     if: inputs.lighthouse
+    # Scores are informational: a Lighthouse hiccup is reported on the job but
+    # doesn't turn the site check (uptime + links) red.
+    continue-on-error: true
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -128,7 +131,7 @@ jobs:
 
       - name: Run Lighthouse CI
         id: lhci
-        uses: treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18 # v12.6.2
+        uses: treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18 # v12
         with:
           urls: ${{ inputs.url }}
           runs: 1
