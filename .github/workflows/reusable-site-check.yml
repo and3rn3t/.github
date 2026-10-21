@@ -1,0 +1,87 @@
+# Reusable site check — uptime + broken-link check for a live homepage.
+# Meant for a daily schedule, so a failing run shows up as a red workflow on
+# main (and in workspace-tools' `make meta` "CI green" check).
+#
+#   on:
+#     schedule:
+#       - cron: '20 7 * * *'
+#     workflow_dispatch:
+#
+#   jobs:
+#     site-check:
+#       uses: and3rn3t/.github/.github/workflows/reusable-site-check.yml@v1
+#       with:
+#         url: https://andernet.dev
+
+name: Reusable Site Check
+
+on:
+  workflow_call:
+    inputs:
+      url:
+        description: Homepage URL to check.
+        required: true
+        type: string
+      extra-lychee-args:
+        description: Extra lychee arguments appended to the defaults (e.g. more --exclude patterns).
+        required: false
+        default: ''
+        type: string
+
+permissions: {}
+
+concurrency:
+  # Static "site-check-" prefix: github.workflow is the caller's name, so an
+  # unprefixed group could collide with another reusable workflow called from
+  # the same caller (see the reusable-node-verify.yml fix).
+  group: site-check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  uptime:
+    name: Homepage returns 200
+    runs-on: ubuntu-latest
+    permissions: {}
+    timeout-minutes: 5
+    steps:
+      - name: Check HTTP status
+        env:
+          SITE_URL: ${{ inputs.url }}
+        run: |
+          status=$(curl --silent --show-error --location --output /dev/null \
+            --write-out '%{http_code}' \
+            --retry 4 --retry-delay 15 --retry-all-errors --max-time 30 \
+            --user-agent 'and3rn3t-site-check (+https://github.com/and3rn3t/.github)' \
+            "$SITE_URL") || true
+          echo "$SITE_URL -> HTTP ${status:-none}"
+          if [ "$status" != "200" ]; then
+            echo "::error title=Site down::$SITE_URL returned HTTP ${status:-none} (expected 200)"
+            exit 1
+          fi
+
+  links:
+    name: Broken links on homepage
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    steps:
+      # lychee is not recursive: given a URL it fetches that one page and
+      # checks every link on it — i.e. a depth-1 crawl of the homepage.
+      # Social sites that block bots (999/403/429 for unauthenticated
+      # clients) are excluded so they don't produce false alarms.
+      - name: Run lychee
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: >-
+            --no-progress
+            --max-retries 3
+            --retry-wait-time 5
+            --timeout 20
+            --accept 200..=299,429
+            --exclude '^https?://([a-z0-9-]+\.)?(linkedin\.com|twitter\.com|x\.com|facebook\.com|instagram\.com|tiktok\.com|threads\.net|reddit\.com)'
+            ${{ inputs.extra-lychee-args }}
+            '${{ inputs.url }}'
+          fail: true
+          jobSummary: true
+          token: ${{ github.token }}
