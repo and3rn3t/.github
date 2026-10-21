@@ -1,0 +1,8 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Renovate preset for dormant and3rn3t repos (no human project commits in 90 days, per workspace-tools tools/lib/activity.mjs). Same rules as renovate-config, but batched into one monthly window with fewer open PRs, so idle repos stop generating weekly churn. Vulnerability-alert PRs ignore the schedule and still open immediately. Consume with: { \"extends\": [\"github>and3rn3t/.github//renovate-config-dormant\"] }; switch tiers with `make renovate-tier-apply` in workspace-tools.",
+  "extends": ["github>and3rn3t/.github//renovate-config"],
+  "schedule": ["before 6am on the first day of the month"],
+  "prConcurrentLimit": 2,
+  "prHourlyLimit": 2
+}
