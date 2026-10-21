@@ -12,6 +12,20 @@
 #       uses: and3rn3t/.github/.github/workflows/reusable-site-check.yml@v1
 #       with:
 #         url: https://andernet.dev
+#
+# The `lighthouse` job (on by default; `lighthouse: false` to skip) runs one
+# mobile Lighthouse pass and uploads a `lighthouse` artifact holding
+# lighthouse.json — consumed by the workspace dashboard via the Actions
+# artifacts API:
+#
+#   {
+#     "url": "https://andernet.dev",
+#     "timestamp": "2026-10-21T07:20:00Z",
+#     "performance": 97, "accessibility": 100,
+#     "best-practices": 100, "seo": 92
+#   }
+#
+# Scores are 0–100 integers, or null if Lighthouse could not score a category.
 
 name: Reusable Site Check
 
@@ -27,6 +41,11 @@ on:
         required: false
         default: ''
         type: string
+      lighthouse:
+        description: Run a mobile Lighthouse audit and upload its scores as the `lighthouse` artifact.
+        required: false
+        default: true
+        type: boolean
 
 permissions: {}
 
@@ -90,3 +109,64 @@ jobs:
           fail: true
           jobSummary: true
           token: ${{ github.token }}
+
+  lighthouse:
+    name: Lighthouse scores
+    if: inputs.lighthouse
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    steps:
+      # Lighthouse emulates a mobile device by default; the config makes that
+      # explicit. No checkout — the config lives in the runner's temp dir.
+      - name: Write Lighthouse config
+        run: |
+          cat > "$RUNNER_TEMP/lighthouserc.json" <<'JSON'
+          {"ci": {"collect": {"settings": {"formFactor": "mobile"}}}}
+          JSON
+
+      - name: Run Lighthouse CI
+        id: lhci
+        uses: treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18 # v12.6.2
+        with:
+          urls: ${{ inputs.url }}
+          runs: 1
+          configPath: ${{ runner.temp }}/lighthouserc.json
+          uploadArtifacts: false
+          temporaryPublicStorage: false
+
+      - name: Write lighthouse.json
+        env:
+          SITE_URL: ${{ inputs.url }}
+          MANIFEST: ${{ steps.lhci.outputs.manifest }}
+        run: |
+          timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          jq --arg url "$SITE_URL" --arg timestamp "$timestamp" '
+            def pct: if . == null then null else (. * 100 | round) end;
+            (map(select(.isRepresentativeRun)) | first // .[0]).summary as $s
+            | {
+                url: $url,
+                timestamp: $timestamp,
+                performance: ($s.performance | pct),
+                accessibility: ($s.accessibility | pct),
+                "best-practices": ($s["best-practices"] | pct),
+                seo: ($s.seo | pct)
+              }
+          ' <<<"$MANIFEST" > lighthouse.json
+          cat lighthouse.json
+          {
+            echo "### Lighthouse (mobile) — $SITE_URL"
+            echo
+            echo "| Category | Score |"
+            echo "|---|---|"
+            jq -r 'del(.url, .timestamp) | to_entries[] | "| \(.key) | \(.value // "n/a") |"' lighthouse.json
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload lighthouse artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lighthouse
+          path: lighthouse.json
+          retention-days: 30
+          if-no-files-found: error
