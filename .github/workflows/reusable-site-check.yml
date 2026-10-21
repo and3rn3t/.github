@@ -69,7 +69,10 @@ jobs:
       # lychee is not recursive: given a URL it fetches that one page and
       # checks every link on it — i.e. a depth-1 crawl of the homepage.
       # Social sites that block bots (999/403/429 for unauthenticated
-      # clients) are excluded so they don't produce false alarms.
+      # clients) are excluded so they don't produce false alarms, as are
+      # Cloudflare's obfuscated email links (/cdn-cgi/l/email-protection, a
+      # 404 by design) and form endpoints that only accept POST (formspree,
+      # getform, basin, web3forms).
       - name: Run lychee
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
@@ -80,6 +83,8 @@ jobs:
             --timeout 20
             --accept 200..=299,429
             --exclude '^https?://([a-z0-9-]+\.)?(linkedin\.com|twitter\.com|x\.com|facebook\.com|instagram\.com|tiktok\.com|threads\.net|reddit\.com)'
+            --exclude '/cdn-cgi/l/email-protection'
+            --exclude '^https://(formspree\.io|getform\.io|usebasin\.com|api\.web3forms\.com)/'
             ${{ inputs.extra-lychee-args }}
             '${{ inputs.url }}'
           fail: true
