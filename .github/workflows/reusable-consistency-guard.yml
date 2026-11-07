@@ -7,9 +7,13 @@
 #       with:
 #         mode: warn      # or fail
 #
-# Baseline copies live in this repo under baseline/. A caller repo can declare
-# intentional drift in a top-level .consistency-ignore file (one path per line);
-# listed files are skipped. No secrets/PAT required — this repo is public.
+# The baseline is and3rn3t/ai-template-repo itself (the single source the
+# workspace tooling also reads), so updating a file there updates what this
+# guard checks. A caller repo can declare intentional drift in a top-level
+# .consistency-ignore file (one path per line); listed files are skipped.
+# Files the caller doesn't have are skipped too — `make sync-apply` creates
+# missing files; this guard only catches drift. No secrets/PAT required — the
+# template repo is public.
 
 name: Reusable Consistency Guard
 
@@ -27,7 +31,7 @@ on:
         default: fail
         type: string
       baseline-ref:
-        description: Ref of and3rn3t/.github to read the baseline from.
+        description: Ref of and3rn3t/ai-template-repo to read the baseline from.
         required: false
         default: main
         type: string
@@ -47,10 +51,10 @@ jobs:
     steps:
       - name: Checkout caller repo
         uses: actions/checkout@v7
-      - name: Checkout baseline (and3rn3t/.github)
+      - name: Checkout baseline (and3rn3t/ai-template-repo)
         uses: actions/checkout@v7
         with:
-          repository: and3rn3t/.github
+          repository: and3rn3t/ai-template-repo
           ref: ${{ inputs.baseline-ref }}
           path: .consistency-baseline
       - name: Compare against baseline
@@ -59,7 +63,7 @@ jobs:
           MODE: ${{ inputs.mode }}
         run: |
           set -u
-          BASE=".consistency-baseline/baseline"
+          BASE=".consistency-baseline"
           IGN=".consistency-ignore"
           violations=0
           if [ -f "$IGN" ]; then echo "Declared intentional drift (.consistency-ignore):"; sed 's/^/  · /' "$IGN"; echo "----"; fi
@@ -71,8 +75,7 @@ jobs:
               echo "· $f — no baseline on file, skipping"; continue
             fi
             if [ ! -f "$f" ]; then
-              echo "::error file=$f::missing $f (expected from ai-template-repo baseline)"
-              violations=$((violations+1)); continue
+              echo "· $f — not in this repo, skipping (make sync-apply creates missing files)"; continue
             fi
             if diff -q "$BASE/$f" "$f" >/dev/null 2>&1; then
               echo "✓ $f — in sync"
