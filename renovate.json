@@ -2,5 +2,20 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "description": "Playwright does not support Ubuntu 26.04 yet; keep the e2e runner pinned to 24.04",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchDepNames": [
+        "ubuntu"
+      ],
+      "matchFileNames": [
+        ".github/workflows/reusable-playwright-e2e.yml"
+      ],
+      "enabled": false
+    }
   ]
 }

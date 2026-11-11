@@ -54,7 +54,10 @@ concurrency:
 
 jobs:
   e2e:
-    runs-on: ubuntu-26.04
+    # Keep on 24.04 until Playwright supports 26.04: `playwright install --with-deps` on
+    # an unsupported distro is slow and unreliable. Renovate is told to leave this alone
+    # (renovate.json); the pin was reverted once already by a "ubuntu to v26" PR (#19).
+    runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.timeout-minutes }}
     permissions:
       contents: read
