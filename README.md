@@ -21,7 +21,7 @@ jobs:
 | `reusable-python-test.yml` | pytest across a Python version matrix | `python-versions`, `install-command`, `test-command` |
 | `reusable-codeql.yml` | CodeQL security analysis | `languages` (required, JSON array) |
 | `reusable-dependency-review.yml` | PR dependency review | `fail-on-severity` (default critical) |
-| `reusable-playwright-e2e.yml` | Playwright e2e + always-uploaded report | `command`, `package-manager`, `browsers`, `report-path` |
+| `reusable-playwright-e2e.yml` | Playwright e2e + always-uploaded report | `command`, `package-manager`, `browsers`, `report-path`, `shard` |
 
 ## Workflow templates
 

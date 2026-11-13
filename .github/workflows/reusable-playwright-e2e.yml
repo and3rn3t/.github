@@ -49,6 +49,14 @@ on:
         required: false
         default: 30
         type: number
+      shard:
+        description: >-
+          Label for one leg of a sharded run (e.g. "1"). Only suffixes the concurrency group and
+          the report artifact name so parallel matrix legs neither cancel each other nor collide
+          on one artifact; the caller passes `--shard=N/M` in `command`. Empty for unsharded runs.
+        required: false
+        default: ''
+        type: string
 
 permissions: {}
 
@@ -57,7 +65,7 @@ concurrency:
   # reusable-node-verify.yml's group even when both are called from the same
   # caller workflow (github.workflow resolves to the caller's name, not this
   # file's), which previously let them cancel each other mid-run.
-  group: playwright-e2e-${{ github.workflow }}-${{ github.ref }}
+  group: playwright-e2e-${{ github.workflow }}-${{ github.ref }}${{ inputs.shard != '' && format('-shard-{0}', inputs.shard) || '' }}
   cancel-in-progress: true
 
 jobs:
@@ -91,6 +99,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: playwright-report${{ inputs.shard != '' && format('-{0}', inputs.shard) || '' }}
           path: ${{ inputs.report-path }}
           retention-days: 7
